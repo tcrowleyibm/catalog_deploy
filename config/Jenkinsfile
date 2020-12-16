@@ -1,0 +1,28 @@
+node {
+    def customImage
+
+    stage('Clone main repo') {
+        steps {
+            sh 'mkdir -p deploydir'
+            dir("deploydir")
+            {
+                git branch: "main",
+                credentialsId: 'tcrowley',
+                url: 'https://github.com/tcrowleyibm/catalog_deploy.git'
+            }
+        }
+    }
+
+    stage('Clone the catalog repo') {
+        steps {
+            sh 'mkdir -p catalogdir'
+            dir("catalogdir")
+            {
+                git branch: "main",
+                credentialsId: 'tcrowley',
+                url: 'https://github.com/tcrowleyibm/catalog.git'
+            }
+        }
+    }
+
+}
