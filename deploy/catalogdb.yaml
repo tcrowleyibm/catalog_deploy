@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgresdb
+spec:
+  selector:
+    matchLabels:
+      app: catalogdb
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: catalogdb
+    spec:
+      containers:
+        - name: catalogdb
+          image: postgres 
+          ports:
+          - containerPort: 5432
+          env:
+          - name: POSTGRES_PASSWORD
+            value: passwordie
+          - name: POSTGRES_USER
+            value: staginguser 
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: catalogdb-service
+  namespace: default
+  labels:
+    app: postgresdb
+spec:
+  type: ClusterIP
+  selector:
+    app: catalogdb
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432

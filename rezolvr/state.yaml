@@ -1,0 +1,311 @@
+environmentVars:
+  appEnvProps:
+  - name: welcome_port
+    value: "3000"
+  - name: catalog_port
+    value: "3001"
+  - name: catalog_host
+    value: catalog-service
+  - name: orders_port
+    value: "3003"
+  - name: orders_host
+    value: orders-service
+  - name: app_message
+    value: Hello from Rezolvr!
+  dbEnvProps:
+  - name: db_username
+    value: staginguser
+  - name: db_password
+    value: passwordie
+  - name: db_port
+    value: "5432"
+  - name: db_host
+    value: catalogdb-service
+  registryProps:
+  - name: endpoint
+    value: host.minikube.internal:5000
+components:
+- name: welcome
+  type: resource.web.app
+  driver: ""
+  description: Main landing page for the boat tour workload
+  provides:
+  - name: welcome_site
+    type: service.web.app
+    params:
+    - name: message_endpoint
+      value: /message
+    - name: charters_endpoint
+      value: /catalog
+    - name: port
+      formula: '{{with(index .Needs "environment.properties:appEnvProps")}}{{.Params.welcome_port.Value}}{{end}}'
+      value: "3000"
+    - name: imageName
+      formula: '{{.Component.Name}}'
+      value: welcome
+  uses:
+  - name: ""
+    type: environment
+    params:
+    - name: ORDERS_URL
+      formula: '{{with(index .Needs "environment.properties:appEnvProps")}}{{.Params.orders_host.Value}}{{end}}{{with(index .Needs "service.web.app:orders_service")}}:{{.Params.port.Value}}{{.Params.orders_endpoint.Value}}{{end}}'
+      value: orders-service:3003/orders
+    - name: WELCOME_PORT
+      formula: '{{with(index .Needs "environment.properties:appEnvProps")}}{{.Params.welcome_port.Value}}{{end}}'
+      value: "3000"
+    - name: APP_MSG
+      formula: '{{with(index .Needs "environment.properties:appEnvProps")}}{{.Params.app_message.Value}}{{end}}'
+      value: Hello from Rezolvr!
+    - name: CHARTERS_URL
+      formula: '{{with(index .Needs "environment.properties:appEnvProps")}}{{.Params.catalog_host.Value}}{{end}}{{with(index .Needs "service.web.app:catalog_service")}}:{{.Params.port.Value}}{{.Params.charters_endpoint.Value}}{{end}}'
+      value: catalog-service:3001/charters
+  needs:
+  - name: catalog_service
+    type: service.web.app
+    params:
+    - name: charters_endpoint
+      value: /charters
+      required: true
+    - name: port
+      value: "3001"
+      required: true
+    - name: imageName
+      value: catalog
+      required: true
+  - name: orders_service
+    type: service.web.app
+    params:
+    - name: imageName
+      value: orders
+      required: true
+    - name: orders_endpoint
+      value: /orders
+      required: true
+    - name: port
+      value: "3003"
+      required: true
+  - name: appEnvProps
+    type: environment.properties
+    params:
+    - name: app_message
+      value: Hello from Rezolvr!
+      required: true
+    - name: welcome_port
+      value: "3000"
+      required: true
+    - name: catalog_host
+      value: catalog-service
+      required: true
+    - name: orders_host
+      value: orders-service
+      required: true
+- name: postgresdb
+  type: resource.db.postgres
+  driver: ""
+  description: Database resources for the staging environment
+  provides:
+  - name: ordersdb
+    type: service.db.postgres
+    params:
+    - name: db_host
+      formula: '{{with(index .Needs "environment.properties:dbEnvProps")}}{{.Params.db_host.Value}}{{end}}'
+      value: catalogdb-service
+    - name: containerName
+      formula: '{{.Component.Name}}'
+      value: postgresdb
+    - name: imageName
+      value: postgres
+    - name: image.tag
+      value: latest
+    - name: db_username
+      formula: '{{with(index .Needs "environment.properties:dbEnvProps")}}{{.Params.db_username.Value}}{{end}}'
+      value: staginguser
+    - name: db_password
+      formula: '{{with(index .Needs "environment.properties:dbEnvProps")}}{{.Params.db_password.Value}}{{end}}'
+      value: passwordie
+    - name: db_port
+      formula: '{{with(index .Needs "environment.properties:dbEnvProps")}}{{.Params.db_port.Value}}{{end}}'
+      value: "5432"
+    - name: db_name
+      value: postgres
+  - name: catalogdb
+    type: service.db.postgres
+    params:
+    - name: imageName
+      value: postgres
+    - name: image.tag
+      value: latest
+    - name: db_username
+      formula: '{{with(index .Needs "environment.properties:dbEnvProps")}}{{.Params.db_username.Value}}{{end}}'
+      value: staginguser
+    - name: db_password
+      formula: '{{with(index .Needs "environment.properties:dbEnvProps")}}{{.Params.db_password.Value}}{{end}}'
+      value: passwordie
+    - name: db_port
+      formula: '{{with(index .Needs "environment.properties:dbEnvProps")}}{{.Params.db_port.Value}}{{end}}'
+      value: "5432"
+    - name: db_name
+      value: postgres
+    - name: db_host
+      formula: '{{with(index .Needs "environment.properties:dbEnvProps")}}{{.Params.db_host.Value}}{{end}}'
+      value: catalogdb-service
+    - name: containerName
+      formula: '{{.Component.Name}}'
+      value: postgresdb
+  uses:
+  - name: ""
+    type: environment
+    params:
+    - name: POSTGRES_PASSWORD
+      formula: '{{with(index .Needs "environment.properties:dbEnvProps")}}{{.Params.db_password.Value}}{{end}}'
+      value: passwordie
+    - name: POSTGRES_USER
+      formula: '{{with(index .Needs "environment.properties:dbEnvProps")}}{{.Params.db_username.Value}}{{end}}'
+      value: staginguser
+  needs:
+  - name: dbEnvProps
+    type: environment.properties
+    params:
+    - name: db_username
+      value: staginguser
+      required: true
+    - name: db_password
+      value: passwordie
+      required: true
+    - name: db_port
+      value: "5432"
+      defaultValue: "5432"
+    - name: db_host
+      value: catalogdb-service
+      required: true
+- name: catalog
+  type: resource.web.app
+  driver: ""
+  description: A catalog for boat tours
+  provides:
+  - name: catalog_service
+    type: service.web.app
+    params:
+    - name: port
+      formula: '{{with(index .Needs "environment.properties:appEnvProps")}}{{.Params.catalog_port.Value}}{{end}}'
+      value: "3001"
+    - name: imageName
+      formula: '{{.Component.Name}}'
+      value: catalog
+    - name: dbtime_endpoint
+      value: /dbtime
+    - name: charters_endpoint
+      value: /charters
+  uses:
+  - name: ""
+    type: environment
+    params:
+    - name: DB_USER
+      formula: '{{with(index .Needs "service.db.postgres:catalogdb")}}{{.Params.db_username.Value}}{{end}}'
+      value: staginguser
+    - name: DB_PW
+      formula: '{{with(index .Needs "service.db.postgres:catalogdb")}}{{.Params.db_password.Value}}{{end}}'
+      value: passwordie
+    - name: DB_PORT
+      formula: '{{with(index .Needs "service.db.postgres:catalogdb")}}{{.Params.db_port.Value}}{{end}}'
+      value: "5432"
+    - name: DB_NAME
+      formula: '{{with(index .Needs "service.db.postgres:catalogdb")}}{{.Params.db_name.Value}}{{end}}'
+      value: postgres
+    - name: DB_HOST
+      formula: '{{with(index .Needs "service.db.postgres:catalogdb")}}{{.Params.db_host.Value}}{{end}}'
+      value: catalogdb-service
+    - name: MY_PORT
+      formula: '{{with(index .Needs "environment.properties:appEnvProps")}}{{.Params.catalog_port.Value}}{{end}}'
+      value: "3001"
+  needs:
+  - name: appEnvProps
+    type: environment.properties
+    params:
+    - name: app_message
+      value: Hello from Rezolvr!
+      required: true
+    - name: catalog_port
+      value: "3001"
+      required: true
+  - name: catalogdb
+    type: service.db.postgres
+    params:
+    - name: db_username
+      value: staginguser
+      required: true
+    - name: db_password
+      value: passwordie
+      required: true
+    - name: db_port
+      value: "5432"
+      required: true
+    - name: db_name
+      value: postgres
+      required: true
+    - name: db_host
+      value: catalogdb-service
+      required: true
+- name: orders
+  type: resource.web.app
+  driver: ""
+  description: A microservice for placing boat tour orders
+  provides:
+  - name: orders_service
+    type: service.web.app
+    params:
+    - name: orders_endpoint
+      value: /orders
+    - name: port
+      formula: '{{with(index .Needs "environment.properties:appEnvProps")}}{{.Params.orders_port.Value}}{{end}}'
+      value: "3003"
+    - name: imageName
+      formula: '{{.Component.Name}}'
+      value: orders
+  uses:
+  - name: ""
+    type: environment
+    params:
+    - name: DB_PW
+      formula: '{{with(index .Needs "service.db.postgres:ordersdb")}}{{.Params.db_password.Value}}{{end}}'
+      value: passwordie
+    - name: DB_PORT
+      formula: '{{with(index .Needs "service.db.postgres:ordersdb")}}{{.Params.db_port.Value}}{{end}}'
+      value: "5432"
+    - name: DB_NAME
+      formula: '{{with(index .Needs "service.db.postgres:ordersdb")}}{{.Params.db_name.Value}}{{end}}'
+      value: postgres
+    - name: DB_HOST
+      formula: '{{with(index .Needs "service.db.postgres:ordersdb")}}{{.Params.db_host.Value}}{{end}}'
+      value: catalogdb-service
+    - name: MY_PORT
+      formula: '{{with(index .Needs "environment.properties:appEnvProps")}}{{.Params.orders_port.Value}}{{end}}'
+      value: "3003"
+    - name: DB_USER
+      formula: '{{with(index .Needs "service.db.postgres:ordersdb")}}{{.Params.db_username.Value}}{{end}}'
+      value: staginguser
+  needs:
+  - name: appEnvProps
+    type: environment.properties
+    params:
+    - name: orders_port
+      value: "3003"
+      required: true
+  - name: ordersdb
+    type: service.db.postgres
+    params:
+    - name: db_name
+      value: postgres
+      required: true
+    - name: db_host
+      value: catalogdb-service
+      required: true
+    - name: db_username
+      value: staginguser
+      required: true
+    - name: db_password
+      value: passwordie
+      required: true
+    - name: db_port
+      value: "5432"
+      required: true
