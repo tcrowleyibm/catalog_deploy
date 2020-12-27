@@ -1,0 +1,61 @@
+name: stagingKubeEnvironment
+type: resource.environment
+driver: kube
+description: Environment variables for the staging environment
+provides:
+  - type: environment.properties
+    name: registryProps
+    description: Staging environment registry properties
+    params:
+      - name: endpoint
+        value: host.minikube.internal:5000
+  - type: environment.properties
+    name: dbEnvProps
+    description: Database properties
+    params:
+      - name: db_username
+        value: staginguser
+      - name: db_password
+        value: passwordie
+      - name: db_port
+        value: 5432
+      - name: db_host
+        value: catalogdb-service
+  - type: environment.properties
+    name: appEnvProps
+    description: Application Properties
+    params:
+      - name: welcome_port
+        value: 3000
+      - name: catalog_port
+        value: 3001
+      - name: catalog_host
+        value: catalog-service
+      - name: orders_port
+        value: 3003
+      - name: orders_host
+        value: orders-service
+      - name: app_message
+        value: 'Hello from Rezolvr!'
+uses: # This is really ".Platform"
+  - type: platform.settings
+    name: default
+    params:
+      - name: numInstances
+        value: 1
+      - name: imagePullPolicy
+        value: Never
+      - name: serviceType
+        value: NodePort
+  - type: platform.settings
+    name: catalogdb
+    params:
+      - name: numInstances
+        value: 1
+      - name: serviceType
+        value: ClusterIP
+  - type: platform.settings
+    name: ordersdb
+    params:
+      - name: isExternal
+        value: true
