@@ -4,12 +4,6 @@ driver: kube
 description: Environment variables for the staging environment
 provides:
   - type: environment.properties
-    name: registryProps
-    description: Staging environment registry properties
-    params:
-      - name: endpoint
-        value: host.minikube.internal:5000
-  - type: environment.properties
     name: dbEnvProps
     description: Database properties
     params:
@@ -30,13 +24,19 @@ provides:
       - name: catalog_port
         value: 3001
       - name: catalog_host
-        value: catalog-service
+        value: catalogms-service
       - name: orders_port
         value: 3003
       - name: orders_host
-        value: orders-service
+        value: ordersms-service
       - name: app_message
         value: 'Hello from Rezolvr!'
+  - type: environment.properties
+    name: registryProps
+    description: Staging environment registry properties
+    params:
+      - name: endpoint
+        value: host.minikube.internal:5000/
 uses: # This is really ".Platform"
   - type: platform.settings
     name: default
@@ -44,7 +44,7 @@ uses: # This is really ".Platform"
       - name: numInstances
         value: 1
       - name: imagePullPolicy
-        value: Never
+        value: Always
       - name: serviceType
         value: NodePort
   - type: platform.settings
@@ -59,3 +59,18 @@ uses: # This is really ".Platform"
     params:
       - name: isExternal
         value: true
+  - type: platform.settings
+    name: catalogms
+    params:
+      - name: nodePort
+        value: 30163
+  - type: platform.settings
+    name: ordersms
+    params:
+      - name: nodePort
+        value: 30164
+  - type: platform.settings
+    name: welcomeapp
+    params:
+      - name: nodePort
+        value: 30165

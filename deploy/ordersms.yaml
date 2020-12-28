@@ -5,17 +5,17 @@ metadata:
 spec:
   selector:
     matchLabels:
-      app: orders_service
+      app: ordersms
   replicas: 1
   template:
     metadata:
       labels:
-        app: orders_service
+        app: ordersms
     spec:
       containers:
-        - name: orders_service
-          image: orders
-          imagePullPolicy: Never 
+        - name: ordersms
+          image: host.minikube.internal:5000/orders
+          imagePullPolicy: Always 
           ports:
           - containerPort: 3003
           env:
@@ -35,16 +35,16 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: orders_service-service
+  name: ordersms-service
   namespace: default
   labels:
     app: orders
 spec:
   type: NodePort
   selector:
-    app: orders_service
+    app: ordersms
   ports:
     - protocol: TCP
       port: 3003
       targetPort: 3003
-      nodePort: 30163
+      nodePort: 30164
