@@ -7,14 +7,12 @@ provides:
     name: dbEnvProps
     description: Database properties
     params:
-      - name: db_username
-        value: staginguser
-      - name: db_password
-        value: passwordie
       - name: db_port
         value: 5432
       - name: db_host
         value: catalogdb-service
+      - name: db_name
+        value: catalog
   - type: environment.properties
     name: appEnvProps
     description: Application Properties

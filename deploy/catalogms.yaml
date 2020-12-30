@@ -15,7 +15,7 @@ spec:
       containers:
         - name: catalogms
           image: host.minikube.internal:5000/catalog
-          imagePullPolicy: Always 
+          imagePullPolicy: Always
           ports:
           - containerPort: 3001
           env:
@@ -25,12 +25,18 @@ spec:
             value: 'postgres'
           - name: DB_PORT
             value: '5432'
-          - name: DB_PW
-            value: 'passwordie'
-          - name: DB_USER
-            value: 'staginguser'
           - name: MY_PORT
-            value: '3001' 
+            value: '3001'
+          - name: DB_PW
+            valueFrom:
+              secretKeyRef:
+                name: databaseCredentials
+                key: db_password
+          - name: DB_USER
+            valueFrom:
+              secretKeyRef:
+                name: databaseCredentials
+                key: db_username
 ---
 apiVersion: v1
 kind: Service
