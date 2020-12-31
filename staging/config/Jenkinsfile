@@ -1,0 +1,77 @@
+node {
+    def deployRepoDir = ''
+    def sourceTrigger = '' // Determine if this job was launched/triggered by a component repo
+    def targetEnv = 'staging'
+
+    stage('Initial setup') {
+        if (params.source == 'catalog' || params.source == 'welcome' || params.source == 'orders') {
+            sourceTrigger = params.source
+            echo "Build triggered by a component. Source component = ${sourceTrigger}"
+        }
+    }
+
+    stage('Clone main repo') {
+        cleanWs()
+        sh 'git config --global user.email "someuser@somedomain.co"'
+        sh 'git config --global user.name "Jenkie Jenkins"'
+        sh 'mkdir -p deploy'
+        dir("deploy") {
+            deployRepoDir = pwd()
+            checkout([$class: 'GitSCM',
+                branches: [[name: '*/master']],
+                doGenerateSubmoduleConfigurations: false,
+                extensions: [],
+                submoduleCfg: [],
+                userRemoteConfigs: [[credentialsId: '548c572f-09f7-40ef-8f15-ab014be77052', 
+                                     url: 'https://github.com/tcrowleyibm/gulfcharter_stage_perf.git']]])
+            sh 'git checkout master'
+        }
+    }
+    
+    if (sourceTrigger != '') {
+        stage("Clone ${sourceTrigger} repo") {
+            sh "mkdir -p ${sourceTrigger}"
+            dir(sourceTrigger) {
+                checkout([$class: 'GitSCM',
+                    branches: [[name: '*/main']],
+                    doGenerateSubmoduleConfigurations: false,
+                    extensions: [],
+                    submoduleCfg: [],
+                    userRemoteConfigs: [[credentialsId: '548c572f-09f7-40ef-8f15-ab014be77052',
+                                        url: "https://github.com/tcrowleyibm/${sourceTrigger}.git"]]])
+            }
+        }
+        
+        stage('Copy rezolvr files to the deploy project, in the lib directory') {
+            dir(sourceTrigger) {
+                def sourceRepoDir = pwd()
+                sh "cp ${sourceRepoDir}/rezolvr/*.yaml ${deployRepoDir}/${targetEnv}/rezolvr/lib/"
+            }
+        }
+    } else {
+        stage('No trigger') {
+            echo "Build not triggered by a component repository, so source repo steps have been skipped"
+        }
+    }
+
+    stage('Resolve dependencies') {
+        dir("deploy") {
+        sh 'pwd'
+        sh 'export REZOLVR_PLUGINDIR=/usr/share/rezolvr/plugins/'
+        sh "rezolvr apply -a ./${targetEnv}/rezolvr/local/credentials.yaml -a ./${targetEnv}/rezolvr/local/registry.yaml -a ./${targetEnv}/rezolvr/local/databases.yaml -a ./${targetEnv}/rezolvr/lib/welcome.yaml -a ./${targetEnv}/rezolvr/lib/catalog.yaml -a ./${targetEnv}/rezolvr/lib/orders.yaml -e ./${targetEnv}/rezolvr/environment-staging.yaml -s ./${targetEnv}/rezolvr/state.yaml -o ./${targetEnv}/deploy/"
+        }
+    }
+
+    stage('Push changes back to git') {
+        dir("deploy") {
+            withCredentials([usernamePassword(credentialsId: '548c572f-09f7-40ef-8f15-ab014be77052',
+                 usernameVariable: 'username',
+                 passwordVariable: 'password')]){
+                sh 'git add .'
+                sh 'git commit -m "Jenkins update to the deployment files"'
+                sh("git push http://$username:$password@github.com/tcrowleyibm/gulfcharter_stage_perf.git")
+            }
+        }
+    }
+
+}

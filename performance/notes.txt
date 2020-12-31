@@ -1,0 +1,2 @@
+Performance config files should be placed in this section of the repository.
+This is left as an exercise to the reader.
