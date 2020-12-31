@@ -41,12 +41,12 @@ uses:
       - name: POSTGRES_DB
         formula: '{{with(index .Needs "environment.properties:dbEnvProps")}}{{.Params.db_name.Value}}{{end}}'
   - type: secret
-    name: databaseCredentials
+    name: databasecredentials
     params:
       - name: POSTGRES_PASSWORD
-        formula: '{{with(index .Needs "environment.secret:databaseCredentials")}}{{.Params.db_password.Name}}{{end}}'
+        formula: '{{with(index .Needs "environment.secret:databasecredentials")}}{{.Params.db_password.Name}}{{end}}'
       - name: POSTGRES_USER
-        formula: '{{with(index .Needs "environment.secret:databaseCredentials")}}{{.Params.db_username.Name}}{{end}}'
+        formula: '{{with(index .Needs "environment.secret:databasecredentials")}}{{.Params.db_username.Name}}{{end}}'
 needs:
   - type: environment.properties
     name: dbEnvProps
@@ -59,7 +59,7 @@ needs:
       - name: db_name
         required: true
   - type: environment.secret
-    name: databaseCredentials
+    name: databasecredentials
     description: Credentials for accessing the database
     params:
       - name: db_username
