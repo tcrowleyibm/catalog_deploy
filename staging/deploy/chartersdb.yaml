@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgresdb
+spec:
+  selector:
+    matchLabels:
+      app: chartersdb
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: chartersdb
+    spec:
+      containers:
+        - name: chartersdb
+          image: postgres
+          ports:
+          - containerPort: 5432
+          env:
+          - name: POSTGRES_DB
+            value: 'charters'
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: databasecredentials
+                key: db_password
+          - name: POSTGRES_USER
+            valueFrom:
+              secretKeyRef:
+                name: databasecredentials
+                key: db_username
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: chartersdb-service
+  namespace: default
+  labels:
+    app: postgresdb
+spec:
+  type: ClusterIP
+  selector:
+    app: chartersdb
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432
+      
