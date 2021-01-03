@@ -3,7 +3,7 @@ type: resource.db.postgres
 description: Database resources for the staging environment
 provides:
   - type: service.db.postgres
-    name: ordersdb
+    name: reservationsdb
     description: Credentials for accessing the database
     params:
       - name: db_port
@@ -19,7 +19,7 @@ provides:
       - name: image.tag
         value: 'latest'
   - type: service.db.postgres
-    name: catalogdb
+    name: chartersdb
     description: Credentials for accessing the database
     params:
       - name: db_port

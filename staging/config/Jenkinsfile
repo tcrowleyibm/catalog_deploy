@@ -4,7 +4,7 @@ node {
     def targetEnv = 'staging'
 
     stage('Initial setup') {
-        if (params.source == 'catalog' || params.source == 'welcome' || params.source == 'orders') {
+        if (params.source == 'charters' || params.source == 'welcome' || params.source == 'reservations') {
             sourceTrigger = params.source
             echo "Build triggered by a component. Source component = ${sourceTrigger}"
         }
@@ -58,7 +58,7 @@ node {
         dir("deploy") {
         sh 'pwd'
         sh 'export REZOLVR_PLUGINDIR=/usr/share/rezolvr/plugins/'
-        sh "rezolvr apply -a ./${targetEnv}/rezolvr/local/credentials.yaml -a ./${targetEnv}/rezolvr/local/registry.yaml -a ./${targetEnv}/rezolvr/local/databases.yaml -a ./${targetEnv}/rezolvr/lib/welcome.yaml -a ./${targetEnv}/rezolvr/lib/catalog.yaml -a ./${targetEnv}/rezolvr/lib/orders.yaml -e ./${targetEnv}/rezolvr/environment-staging.yaml -s ./${targetEnv}/rezolvr/state.yaml -o ./${targetEnv}/deploy/"
+        sh "rezolvr apply -a ./${targetEnv}/rezolvr/local/credentials.yaml -a ./${targetEnv}/rezolvr/local/registry.yaml -a ./${targetEnv}/rezolvr/local/databases.yaml -a ./${targetEnv}/rezolvr/lib/welcome.yaml -a ./${targetEnv}/rezolvr/lib/charters.yaml -a ./${targetEnv}/rezolvr/lib/reservations.yaml -e ./${targetEnv}/rezolvr/environment-staging.yaml -s ./${targetEnv}/rezolvr/state.yaml -o ./${targetEnv}/deploy/"
         }
     }
 

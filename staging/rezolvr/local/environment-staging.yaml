@@ -10,23 +10,23 @@ provides:
       - name: db_port
         value: 5432
       - name: db_host
-        value: catalogdb-service
+        value: chartersdb-service
       - name: db_name
-        value: catalog
+        value: charters
   - type: environment.properties
     name: appEnvProps
     description: Application Properties
     params:
       - name: welcome_port
         value: 3000
-      - name: catalog_port
+      - name: charters_port
         value: 3001
-      - name: catalog_host
-        value: catalogms-service
-      - name: orders_port
+      - name: charters_host
+        value: chartersms-service
+      - name: reservations_port
         value: 3003
-      - name: orders_host
-        value: ordersms-service
+      - name: reservations_host
+        value: reservationsms-service
       - name: app_message
         value: 'Hello from Rezolvr!'
   - type: environment.properties
@@ -46,24 +46,24 @@ uses: # This is really ".Platform"
       - name: serviceType
         value: NodePort
   - type: platform.settings
-    name: catalogdb
+    name: chartersdb
     params:
       - name: numInstances
         value: 1
       - name: serviceType
         value: ClusterIP
   - type: platform.settings
-    name: ordersdb
+    name: reservationsdb
     params:
       - name: isExternal
         value: true
   - type: platform.settings
-    name: catalogms
+    name: chartersms
     params:
       - name: nodePort
         value: 30163
   - type: platform.settings
-    name: ordersms
+    name: reservationsms
     params:
       - name: nodePort
         value: 30164

@@ -1,8 +1,8 @@
-# catalog_deploy
+# gulfcharter_stage_perf
 
 ## Scope
 
-The purpose of this project is to manage deployment files for the catalog workload
+The purpose of this project is to manage deployment files for the GulfCharter Tours workload
 
 
 ```text
