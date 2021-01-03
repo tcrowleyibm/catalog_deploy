@@ -13,6 +13,8 @@ provides:
         value: chartersdb-service
       - name: db_name
         value: charters
+      - name: db_use_ssl
+        value: 'false'
   - type: environment.properties
     name: appEnvProps
     description: Application Properties
