@@ -1,7 +1,5 @@
 environmentVars:
   appEnvProps:
-  - name: welcome_port
-    value: "3000"
   - name: charters_port
     value: "3001"
   - name: charters_host
@@ -12,17 +10,38 @@ environmentVars:
     value: reservationsms-service
   - name: app_message
     value: Hello from Rezolvr!
+  - name: welcome_port
+    value: "3000"
   dbEnvProps:
-  - name: db_name
-    value: charters
   - name: db_port
     value: "5432"
   - name: db_host
     value: chartersdb-service
+  - name: db_name
+    value: charters
   registryProps:
   - name: endpoint
     value: host.minikube.internal:5000/
 components:
+- name: imageRegistry
+  type: resource.container.registry
+  driver: ""
+  description: Registry for storing and retrieving container images
+  provides:
+  - name: imageRegistry
+    type: service.container.registry
+    params:
+    - name: endpoint
+      formula: '{{with(index .Needs "environment.properties:registryProps")}}{{.Params.endpoint.Value}}{{end}}'
+      value: host.minikube.internal:5000/
+  uses: []
+  needs:
+  - name: registryProps
+    type: environment.properties
+    params:
+    - name: endpoint
+      value: host.minikube.internal:5000/
+      required: true
 - name: postgresdb
   type: resource.db.postgres
   driver: ""
@@ -31,8 +50,6 @@ components:
   - name: reservationsdb
     type: service.db.postgres
     params:
-    - name: db_name
-      value: postgres
     - name: db_host
       formula: '{{with(index .Needs "environment.properties:dbEnvProps")}}{{.Params.db_host.Value}}{{end}}'
       value: chartersdb-service
@@ -46,14 +63,11 @@ components:
     - name: db_port
       formula: '{{with(index .Needs "environment.properties:dbEnvProps")}}{{.Params.db_port.Value}}{{end}}'
       value: "5432"
+    - name: db_name
+      value: postgres
   - name: chartersdb
     type: service.db.postgres
     params:
-    - name: image.tag
-      value: latest
-    - name: db_port
-      formula: '{{with(index .Needs "environment.properties:dbEnvProps")}}{{.Params.db_port.Value}}{{end}}'
-      value: "5432"
     - name: db_name
       value: postgres
     - name: db_host
@@ -64,6 +78,11 @@ components:
       value: postgresdb
     - name: imageName
       value: postgres
+    - name: image.tag
+      value: latest
+    - name: db_port
+      formula: '{{with(index .Needs "environment.properties:dbEnvProps")}}{{.Params.db_port.Value}}{{end}}'
+      value: "5432"
   uses:
   - name: default
     type: environment
@@ -110,18 +129,18 @@ components:
   - name: chartersms
     type: service.web.app
     params:
-    - name: port
-      formula: '{{with(index .Needs "environment.properties:appEnvProps")}}{{.Params.charters_port.Value}}{{end}}'
-      value: "3001"
-    - name: imageName
-      formula: '{{with(index .Needs "service.container.registry:imageRegistry")}}{{.Params.endpoint.Value}}{{end}}{{.Component.Name}}'
-      value: host.minikube.internal:5000/charters
     - name: image.tag
       value: latest
     - name: dbtime_endpoint
       value: /dbtime
     - name: charters_endpoint
       value: /charters
+    - name: port
+      formula: '{{with(index .Needs "environment.properties:appEnvProps")}}{{.Params.charters_port.Value}}{{end}}'
+      value: "3001"
+    - name: imageName
+      formula: '{{with(index .Needs "service.container.registry:imageRegistry")}}{{.Params.endpoint.Value}}{{end}}{{.Component.Name}}'
+      value: host.minikube.internal:5000/charters
   uses:
   - name: default
     type: environment
@@ -151,14 +170,14 @@ components:
   - name: chartersdb
     type: service.db.postgres
     params:
+    - name: db_host
+      value: chartersdb-service
+      required: true
     - name: db_port
       value: "5432"
       required: true
     - name: db_name
       value: postgres
-      required: true
-    - name: db_host
-      value: chartersdb-service
       required: true
   - name: appEnvProps
     type: environment.properties
@@ -192,6 +211,8 @@ components:
   - name: reservationsms
     type: service.web.app
     params:
+    - name: reservations_endpoint
+      value: /reservations
     - name: port
       formula: '{{with(index .Needs "environment.properties:appEnvProps")}}{{.Params.reservations_port.Value}}{{end}}'
       value: "3003"
@@ -200,12 +221,22 @@ components:
       value: host.minikube.internal:5000/reservations
     - name: image.tag
       value: latest
-    - name: reservations_endpoint
-      value: /reservations
   uses:
+  - name: databasecredentials
+    type: secret
+    params:
+    - name: DB_PW
+      formula: '{{with(index .Needs "environment.secret:databasecredentials")}}{{.Params.db_password.Value}}{{end}}'
+      value: db_password
+    - name: DB_USER
+      formula: '{{with(index .Needs "environment.secret:databasecredentials")}}{{.Params.db_username.Value}}{{end}}'
+      value: db_username
   - name: default
     type: environment
     params:
+    - name: MY_PORT
+      formula: '{{with(index .Needs "environment.properties:appEnvProps")}}{{.Params.reservations_port.Value}}{{end}}'
+      value: "3003"
     - name: DB_PORT
       formula: '{{with(index .Needs "service.db.postgres:reservationsdb")}}{{.Params.db_port.Value}}{{end}}'
       value: "5432"
@@ -215,18 +246,6 @@ components:
     - name: DB_HOST
       formula: '{{with(index .Needs "service.db.postgres:reservationsdb")}}{{.Params.db_host.Value}}{{end}}'
       value: chartersdb-service
-    - name: MY_PORT
-      formula: '{{with(index .Needs "environment.properties:appEnvProps")}}{{.Params.reservations_port.Value}}{{end}}'
-      value: "3003"
-  - name: databasecredentials
-    type: secret
-    params:
-    - name: DB_USER
-      formula: '{{with(index .Needs "environment.secret:databasecredentials")}}{{.Params.db_username.Value}}{{end}}'
-      value: db_username
-    - name: DB_PW
-      formula: '{{with(index .Needs "environment.secret:databasecredentials")}}{{.Params.db_password.Value}}{{end}}'
-      value: db_password
   needs:
   - name: reservationsdb
     type: service.db.postgres
@@ -255,11 +274,11 @@ components:
   - name: databasecredentials
     type: environment.secret
     params:
-    - name: db_password
-      value: db_password
-      required: true
     - name: db_username
       value: db_username
+      required: true
+    - name: db_password
+      value: db_password
       required: true
 - name: dbcredentials
   type: resource.environment
@@ -299,9 +318,6 @@ components:
   - name: ""
     type: environment
     params:
-    - name: APP_MSG
-      formula: '{{with(index .Needs "environment.properties:appEnvProps")}}{{.Params.app_message.Value}}{{end}}'
-      value: Hello from Rezolvr!
     - name: CHARTERS_URL
       formula: '{{with(index .Needs "environment.properties:appEnvProps")}}{{.Params.charters_host.Value}}{{end}}{{with(index
         .Needs "service.web.app:chartersms")}}:{{.Params.port.Value}}{{.Params.charters_endpoint.Value}}{{end}}'
@@ -313,7 +329,34 @@ components:
     - name: WELCOME_PORT
       formula: '{{with(index .Needs "environment.properties:appEnvProps")}}{{.Params.welcome_port.Value}}{{end}}'
       value: "3000"
+    - name: APP_MSG
+      formula: '{{with(index .Needs "environment.properties:appEnvProps")}}{{.Params.app_message.Value}}{{end}}'
+      value: Hello from Rezolvr!
   needs:
+  - name: chartersms
+    type: service.web.app
+    params:
+    - name: charters_endpoint
+      value: /charters
+      required: true
+    - name: port
+      value: "3001"
+      required: true
+    - name: imageName
+      value: host.minikube.internal:5000/charters
+      required: true
+  - name: reservationsms
+    type: service.web.app
+    params:
+    - name: reservations_endpoint
+      value: /reservations
+      required: true
+    - name: port
+      value: "3003"
+      required: true
+    - name: imageName
+      value: host.minikube.internal:5000/reservations
+      required: true
   - name: appEnvProps
     type: environment.properties
     params:
@@ -331,49 +374,6 @@ components:
       required: true
   - name: imageRegistry
     type: service.container.registry
-    params:
-    - name: endpoint
-      value: host.minikube.internal:5000/
-      required: true
-  - name: chartersms
-    type: service.web.app
-    params:
-    - name: imageName
-      value: host.minikube.internal:5000/charters
-      required: true
-    - name: charters_endpoint
-      value: /charters
-      required: true
-    - name: port
-      value: "3001"
-      required: true
-  - name: reservationsms
-    type: service.web.app
-    params:
-    - name: reservations_endpoint
-      value: /reservations
-      required: true
-    - name: port
-      value: "3003"
-      required: true
-    - name: imageName
-      value: host.minikube.internal:5000/reservations
-      required: true
-- name: imageRegistry
-  type: resource.container.registry
-  driver: ""
-  description: Registry for storing and retrieving container images
-  provides:
-  - name: imageRegistry
-    type: service.container.registry
-    params:
-    - name: endpoint
-      formula: '{{with(index .Needs "environment.properties:registryProps")}}{{.Params.endpoint.Value}}{{end}}'
-      value: host.minikube.internal:5000/
-  uses: []
-  needs:
-  - name: registryProps
-    type: environment.properties
     params:
     - name: endpoint
       value: host.minikube.internal:5000/
